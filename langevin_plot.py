@@ -4,6 +4,7 @@ import os
 import matplotlib.pyplot as plt
 from datetime import date, datetime
 import sys
+from math import factorial
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -11,24 +12,34 @@ def readFile(filename):
     return pd.read_csv(str(filename), sep=',',
         header=0) #.values.T[0] # get values -> transpose -> get 1st element
 
-# funkcje D1 i D2 do wzorku na X(t)
 def D1(X):
     return X - X**3
 
 def D2(X):
     return X**2 + 1
  
-def langevin(D1, D2, step=0.01, rng=6000):
+def langevin(D1, D2, step=0.001, rng=6000):
     """
-    Paramete step okresla gęstosc obliczanych punktów, a rng liczbę obliczanych punktów
+    Generation of points given the functions D1(x), D2(x) using stochastic Euler integration.
+    Parameters
+    ----------
+    step - step of integration
+    
+    rng - number of points to be generated
+
+    Returns
+    ----------
+    X - one yielded point from integration (one by one)
     """
-    step = 0.001
     X = 0
     for i in range(rng):
         X = X + D1(X) * step + np.sqrt(D2(X) * step) * np.random.normal(0, 1)
         yield X
 
 def plot_lanegevin():
+    """
+    ???
+    """
     NUMBER = 10
     step = 1/NUMBER
     rng = 6*NUMBER
@@ -48,6 +59,9 @@ def plot_lanegevin():
     plt.show()
 
 def plot_data():
+    """
+    Plot given data. 
+    """
     data = readFile("SP500.csv")
 
     rows_per_year = 365
@@ -85,39 +99,60 @@ def plot_dif():
     plt.show()
 
 def i_before_k(i, k, lst):
+    """Calculate number of i occurences before number k in data series."""
     times = 0
-    for i in range(len(lst)-1):
-        if lst[i] == i and lst[i+1] == k:
+    for j in range(len(lst)-1):
+        if lst[j] == i and lst[j+1] == k:
             times += 1
     return times
 
 def occurrences_of_i(i, lst):
+    """Calculate number of i occurences in data series."""
     return lst.count(i)
+
+def calculate_D(m, step, order):
+    """
+    Calculate coefficients given:
+    Parameters:
+    -----------
+    m - list of differences
+
+    order (INT) - power of the coefficient
+    
+    Returns:
+    -----------
+    List of coefficient data points.
+    """
+    return [value**order/(factorial(order)*step) for value in m]
+
 
 def main():
     # plot_data()
-    plot_lanegevin()
+    #plot_lanegevin()
     # plot_dif()
+    a=1
 
 if __name__ == '__main__':
     # main()
     # pierwsza lista lst zawiera jakies proste dane do sprawdzenia algorytmu, na nich działa
-    # lst = [-1,0,1,2,1,3,2,1,2,1,3,2]
-    step = 0.1
-    rng = 1000
+    #lst = [-1,0,1,2,1,3,2,1,2,1,3,2]
+    #lst = [-3,-2,-1,0,2,2,2,0,-2,-1,3] // dziala dobrze do testowania 3 binow
+    #lst = [-3,-3,-3,-3,0,0,0,3,3,3,0,0,-2,-1] // dziala dobrze do testowania 3 binow
+    step = 0.001
+    rng = 100000
     # natomiast ta lista zawiera dane wygenerowane przez wzor (2) z pdf z langevina
     lst = list(langevin(D1, D2, step, rng))
 
     # implementacja binów
     xmin = min(lst)
     xmax = max(lst)
-    num_bin = 50
+    num_bin = 30
     # lista przechowuje wartosci srodków binów. Liczba binów wynosi num_bin
     bin_center = [xmin + (xmax - xmin)/num_bin * (k+0.5) for k in range(num_bin)]
     bin_width = (xmax - xmin)/num_bin
     half_bin = bin_width / 2
 
-    print("bin centers: ", bin_center)
+    #print("bin centers: ", bin_center)
 
     # ten slownik przechowuje key:value w taki sposob waartosci: srodka binu:zliczenia w binie
     counts = dict.fromkeys(bin_center, 0)
@@ -126,15 +161,18 @@ if __name__ == '__main__':
     bins_in_time = list()
 
     # zliczenia w binach
-    # nie wyłapuje skranych wartosci, bo jest problem z zakraglaniem, Do poprawienia.mozna dodac jakis mały epsilon, zeby powiększyc granice
+    # wartosc minimalna jest przypisywana rowniez do pierwszego binu
     for value in lst:
         for k in range(num_bin):
             if (bin_center[k] - half_bin) < value <= (bin_center[k] + half_bin):
                 bins_in_time.append(bin_center[k])
                 counts[bin_center[k]] += 1
+        if (value == xmin):
+            bins_in_time.append(bin_center[0])
+            counts[bin_center[0]] += 1
 
-    # print(counts)
-    print("time: ", bins_in_time)
+    #print(counts)
+    #print("time: ", bins_in_time)
     # lista m z algorytmu dla odpowienich srodkow binu
     # implementacja algorytmu podesłanego. Oblicza M dla kolejnych środków binu
     m = []
@@ -144,19 +182,17 @@ if __name__ == '__main__':
         value = 0
         for i in bin_center[::-1]:
             # print(i, " and ", k)
-            # tutaj te a jest zawsze zerowe i to jest problemem. 
-            # Powinno zwracac liczbe ile razy i wystąpił przed k. Gdzie 'i' i 'k' są srodkami binów. 
-            # Czy powinienm rozpatrywac czy to wartosci występują przed sobą. 
-            # Jeżeli wartosci, to jakie wartośći z binu rzyjąc do rozpatrywania, czy występują przed sobą?
             a = i_before_k(i, k, bins_in_time)
             b = occurrences_of_i(i, bins_in_time)
             # print("a: ", a)
             # print("b: ", b)
-            value += (i - k) *  a / b
+            if b != 0:
+                value += (i - k) *  a / b
         m.append(value)
 
-    print("M: ", m)
+    #print("M: ", m)
 
-    y = [counts[i] for i in counts.keys()]
-    plt.scatter(bin_center, y)
+    # y = [counts[i] for i in counts.keys()]
+    # plt.scatter(bin_center, y)
+    plt.plot(bin_center, calculate_D(m, step, 2))
     plt.show()
