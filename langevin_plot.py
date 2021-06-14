@@ -4,7 +4,7 @@ import os
 import matplotlib.pyplot as plt
 from datetime import date, datetime
 import sys
-from math import factorial
+from math import factorial, sqrt
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -14,11 +14,17 @@ def readFile(filename):
 
 def D1(X):
     return X - X**3
-    # return -X
 
 def D2(X):
     return X**2 + 1
-    # return 1
+
+def f1(lst):
+    y = [x-x**3 for x in lst]
+    return y
+
+def f2(lst):
+    y = [x**2+1 for x in lst]
+    return y
  
 def langevin(D1, D2, step=0.001, rng=6000):
     """
@@ -37,68 +43,6 @@ def langevin(D1, D2, step=0.001, rng=6000):
     for i in range(rng):
         X = X + D1(X) * step + np.sqrt(D2(X) * step) * np.random.normal(0, 1)
         yield X
-
-def plot_lanegevin():
-    """
-    ???
-    """
-    NUMBER = 100000
-    step = 1/NUMBER
-    rng = 6*NUMBER
-    a = list(langevin(D1, D2, step, rng))
-    fig, (ax1, ax2) = plt.subplots(nrows=2, ncols=1, figsize=(12, 8))
-    ax1.plot(range(len(a)), a)
-    # ax1.plot(range(len(a)), a)
-    ax1.grid()
-    ax1.set_xticks([i*NUMBER for i in range(7)])
-    ax1.set_xticklabels(['0', '10', '20', '30', '40', '50', '60'])
-    ax1.set_xlabel('t[s]')
-    ax1.set_ylabel('Value')
-    ax2.hist(a, bins=100, edgecolor='black')
-    ax2.grid()
-    ax2.set_ylabel('Counts')
-    ax2.set_xlabel('Value')
-    plt.show()
-
-def plot_data():
-    """
-    Plot given data. 
-    """
-    data = readFile("SP500.csv")
-
-    rows_per_year = 365
-    years = int(20 * rows_per_year)
-
-    date_ = pd.to_datetime(data["Date"][-years:])
-    open_ = data["Open"][-years:].to_numpy()
-    high_ = data["High"][-years:].to_numpy()
-    low_ = data["Low"][-years:].to_numpy()
-    close_ = data["Close"][-years:].to_numpy()
-    adjClose_ = data["Adj Close"][-years:].to_numpy()
-    volume_ = data["Volume"][-years:].to_numpy()
-
-    fig, (ax1, ax2, ax3) = plt.subplots(nrows=3, ncols=1, figsize=(12, 8))
-    ax1.plot(date_, high_, label='High')
-    ax1.plot(date_, low_, label='low')
-    ax2.plot(date_, (high_ - low_), label='difference')
-    ax3.hist(low_, bins=100, label='Hist of lows')
-    ax1.legend()
-    ax2.legend()
-    ax3.legend()
-    plt.show()
-
-def plot_dif():
-    data = readFile("SP500.csv")
-
-    rows_per_year = 365
-    years = int(1 * rows_per_year)
-
-    date_ = pd.to_datetime(data["Date"][-years:])
-    open_ = data["Open"][-years:].to_numpy()
-
-    b = [open_[i+1] - open_[i] for i in range(len(open_) - 1)]
-    plt.plot(range(len(b)), b)
-    plt.show()
 
 def i_before_k(i, k, lst):
     """Calculate number of i occurences before number k in data series."""
@@ -125,38 +69,26 @@ def calculate_D(m, step, order):
     -----------
     List of coefficient data points.
     """
-    return [value**order/(factorial(order)*step) for value in m]
+    return [value/(factorial(order)*step) for value in m]
 
-
-def main():
-    # plot_data()
-    plot_lanegevin()
-    # plot_dif()
-    # a=1
+def calculate_D2(m, step, order):
+    return [value * sqrt(2) / (factorial(order)*step) for value in m]
 
 def co_to_jest():
-    # pierwsza lista lst zawiera jakies proste dane do sprawdzenia algorytmu, na nich działa
-    #lst = [-1,0,1,2,1,3,2,1,2,1,3,2]
-    #lst = [-3,-2,-1,0,2,2,2,0,-2,-1,3] // dziala dobrze do testowania 3 binow
-    #lst = [-3,-3,-3,-3,0,0,0,3,3,3,0,0,-2,-1] // dziala dobrze do testowania 3 binow
-    # lst = [2,1,3,2,1,2,1,3,2]
-    # plt.hist(lst, bins=3)
-    step = 0.001
-    rng = 50000
+    step = 0.01
+    rng = 200000
     # natomiast ta lista zawiera dane wygenerowane przez wzor (2) z pdf z langevina
     lst = list(langevin(D1, D2, step, rng))
 
     # implementacja binów
     xmin = min(lst)
     xmax = max(lst)
-    num_bin = 100
+    num_bin = 40
     # lista przechowuje wartosci srodków binów. Liczba binów wynosi num_bin
     bin_center = [xmin + (xmax - xmin)/num_bin * (k+0.5) for k in range(num_bin)]
     bin_width = (xmax - xmin)/num_bin
     half_bin = bin_width / 2
-
-    # print("bin centers: ", bin_center)
-
+    
     # ten slownik przechowuje key:value w taki sposob waartosci: srodka binu:zliczenia w binie
     counts = dict.fromkeys(bin_center, 0)
     # ta lista przechowuje jakby jakie biny wpadają w czasie
@@ -167,48 +99,54 @@ def co_to_jest():
     # wartosc minimalna jest przypisywana rowniez do pierwszego binu
     epsilon = 1e-6
     for value in lst:
-        for k in range(num_bin):
-            if (bin_center[k] - half_bin) < value <= (bin_center[k] + half_bin):
-                bins_in_time.append(bin_center[k])
-                counts[bin_center[k]] += 1
         if (value == xmin):
             bins_in_time.append(bin_center[0])
             counts[bin_center[0]] += 1
+        elif (value == xmax):
+            bins_in_time.append(bin_center[num_bin-1])
+            counts[bin_center[num_bin-1]] += 1
+        else:
+            for k in range(num_bin):
+                if (bin_center[k] - half_bin) < value <= (bin_center[k] + half_bin):
+                    bins_in_time.append(bin_center[k])
+                    counts[bin_center[k]] += 1
 
-    #print(counts)
-    # print("time: ", bins_in_time)
+    # usuwa biny z za małą liczbą zliczeń
+    for key in counts:
+        if counts[key] < 100:
+            bin_center.remove(key)
+
     # lista m z algorytmu dla odpowienich srodkow binu
     # implementacja algorytmu podesłanego. Oblicza M dla kolejnych środków binu
-    m = []
+    m1 = []
+    m2 = []
 
     # poniżej 'i' i 'k' są wartościami środka binu
-    for k in bin_center:
-        value = 0
-        for i in bin_center[::-1]:
-            # print(i, " and ", k)
-            a = i_before_k(i, k, bins_in_time)
-            b = occurrences_of_i(i, bins_in_time)
-            # print("a: ", a)
-            # print("b: ", b)
-            if b != 0:
-                value += (i - k) *  a / b
-        m.append(value)
-
-    # print("M: ", m)
-
-    # plt.scatter(m, bin_center)
-    # plt.show()
-
-    # y = [counts[i] for i in counts.keys()]
-    # plt.scatter(bin_center, y)
+    for i in bin_center:
+        value1 = 0
+        value2 = 0
+        for k in bin_center[::-1]: # srodki binów, ale od konca
+            if i != k:
+                a = i_before_k(i, k, bins_in_time)
+                b = occurrences_of_i(i, bins_in_time)
+                if b != 0:
+                    value1 += (k - i) *  a / b
+                    value2 += (k - i)**2 *  a / b
+        m1.append(value1)
+        m2.append(value2)
+        
+    x = np.linspace(-3, 3)
+ 
     fig, (ax1, ax2) = plt.subplots(nrows=2, ncols=1, figsize=(12, 8))
-    ax1.plot(bin_center, calculate_D(m, step, 1), label='D1')
-    ax2.plot(bin_center, calculate_D(m, step, 2), label='D2')
+    ax1.scatter(bin_center, calculate_D(m1, step, 1), color='red', label='D1')
+    ax1.plot(x, f1(x), label='x-x^3')
+    ax2.scatter(bin_center, calculate_D2(m2, step, 2), color='red', label='D2')
+    ax2.plot(x, f2(x), label='x^2+1 ')
     ax1.legend()
+    ax1.grid()
     ax2.legend()
+    ax2.grid()
     plt.show()
 
 if __name__ == '__main__':
-    # main()
     co_to_jest()
-    
