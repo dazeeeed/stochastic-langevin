@@ -14,9 +14,11 @@ def readFile(filename):
 
 def D1(X):
     return X - X**3
+    # return -X
 
 def D2(X):
     return X**2 + 1
+    # return 1
  
 def langevin(D1, D2, step=0.001, rng=6000):
     """
@@ -31,7 +33,7 @@ def langevin(D1, D2, step=0.001, rng=6000):
     ----------
     X - one yielded point from integration (one by one)
     """
-    X = 0
+    X = 0.1
     for i in range(rng):
         X = X + D1(X) * step + np.sqrt(D2(X) * step) * np.random.normal(0, 1)
         yield X
@@ -40,19 +42,19 @@ def plot_lanegevin():
     """
     ???
     """
-    NUMBER = 10
+    NUMBER = 100000
     step = 1/NUMBER
     rng = 6*NUMBER
     a = list(langevin(D1, D2, step, rng))
     fig, (ax1, ax2) = plt.subplots(nrows=2, ncols=1, figsize=(12, 8))
-    ax1.scatter(range(len(a)), a)
+    ax1.plot(range(len(a)), a)
     # ax1.plot(range(len(a)), a)
     ax1.grid()
     ax1.set_xticks([i*NUMBER for i in range(7)])
     ax1.set_xticklabels(['0', '10', '20', '30', '40', '50', '60'])
     ax1.set_xlabel('t[s]')
     ax1.set_ylabel('Value')
-    ax2.hist(a, bins=5, edgecolor='black')
+    ax2.hist(a, bins=100, edgecolor='black')
     ax2.grid()
     ax2.set_ylabel('Counts')
     ax2.set_xlabel('Value')
@@ -128,31 +130,32 @@ def calculate_D(m, step, order):
 
 def main():
     # plot_data()
-    #plot_lanegevin()
+    plot_lanegevin()
     # plot_dif()
-    a=1
+    # a=1
 
-if __name__ == '__main__':
-    # main()
+def co_to_jest():
     # pierwsza lista lst zawiera jakies proste dane do sprawdzenia algorytmu, na nich działa
     #lst = [-1,0,1,2,1,3,2,1,2,1,3,2]
     #lst = [-3,-2,-1,0,2,2,2,0,-2,-1,3] // dziala dobrze do testowania 3 binow
     #lst = [-3,-3,-3,-3,0,0,0,3,3,3,0,0,-2,-1] // dziala dobrze do testowania 3 binow
+    # lst = [2,1,3,2,1,2,1,3,2]
+    # plt.hist(lst, bins=3)
     step = 0.001
-    rng = 100000
+    rng = 50000
     # natomiast ta lista zawiera dane wygenerowane przez wzor (2) z pdf z langevina
     lst = list(langevin(D1, D2, step, rng))
 
     # implementacja binów
     xmin = min(lst)
     xmax = max(lst)
-    num_bin = 30
+    num_bin = 100
     # lista przechowuje wartosci srodków binów. Liczba binów wynosi num_bin
     bin_center = [xmin + (xmax - xmin)/num_bin * (k+0.5) for k in range(num_bin)]
     bin_width = (xmax - xmin)/num_bin
     half_bin = bin_width / 2
 
-    #print("bin centers: ", bin_center)
+    # print("bin centers: ", bin_center)
 
     # ten slownik przechowuje key:value w taki sposob waartosci: srodka binu:zliczenia w binie
     counts = dict.fromkeys(bin_center, 0)
@@ -162,6 +165,7 @@ if __name__ == '__main__':
 
     # zliczenia w binach
     # wartosc minimalna jest przypisywana rowniez do pierwszego binu
+    epsilon = 1e-6
     for value in lst:
         for k in range(num_bin):
             if (bin_center[k] - half_bin) < value <= (bin_center[k] + half_bin):
@@ -172,7 +176,7 @@ if __name__ == '__main__':
             counts[bin_center[0]] += 1
 
     #print(counts)
-    #print("time: ", bins_in_time)
+    # print("time: ", bins_in_time)
     # lista m z algorytmu dla odpowienich srodkow binu
     # implementacja algorytmu podesłanego. Oblicza M dla kolejnych środków binu
     m = []
@@ -190,9 +194,21 @@ if __name__ == '__main__':
                 value += (i - k) *  a / b
         m.append(value)
 
-    #print("M: ", m)
+    # print("M: ", m)
+
+    # plt.scatter(m, bin_center)
+    # plt.show()
 
     # y = [counts[i] for i in counts.keys()]
     # plt.scatter(bin_center, y)
-    plt.plot(bin_center, calculate_D(m, step, 2))
+    fig, (ax1, ax2) = plt.subplots(nrows=2, ncols=1, figsize=(12, 8))
+    ax1.plot(bin_center, calculate_D(m, step, 1), label='D1')
+    ax2.plot(bin_center, calculate_D(m, step, 2), label='D2')
+    ax1.legend()
+    ax2.legend()
     plt.show()
+
+if __name__ == '__main__':
+    # main()
+    co_to_jest()
+    
