@@ -25,6 +25,17 @@ def f1(lst):
 def f2(lst):
     y = [x**2+1 for x in lst]
     return y
+
+def plot_poly(lst, poly, order):
+    poly_len = len(poly)
+    ret_poly = []
+    for i in lst:
+        value = 0
+        for j in range(poly_len):
+            value += i**j*poly[poly_len - j - 1]
+        ret_poly.append(value)
+
+    return ret_poly
  
 def langevin(D1, D2, step=0.001, rng=6000):
     """
@@ -76,7 +87,7 @@ def calculate_D2(m, step, order):
 
 def co_to_jest():
     step = 0.01
-    rng = 200000
+    rng = 50000
     # natomiast ta lista zawiera dane wygenerowane przez wzor (2) z pdf z langevina
     lst = list(langevin(D1, D2, step, rng))
 
@@ -134,13 +145,43 @@ def co_to_jest():
                     value2 += (k - i)**2 *  a / b
         m1.append(value1)
         m2.append(value2)
+
+    #Dopasowanie do danych D1
+    #wielomian stopnia 2
+    D1_poly_2 = np.polyfit(bin_center, calculate_D(m1, step, 1), 2)
+    D1_poly_2_str = ['{:.1f}'.format(x) for x in D1_poly_2]
+    D1_2_legend = '+'.join([f'{factor}x^{i-1}' for factor, i in zip(D1_poly_2_str, range(len(D1_poly_2_str), -1, -1))])
+    # wielomian stopnia 3
+    D1_poly_3 = np.polyfit(bin_center, calculate_D(m1, step, 1), 3)
+    D1_poly_3_str = ['{:.1f}'.format(x) for x in D1_poly_3]
+    D1_3_legend = '+'.join([f'{factor}x^{i-1}' for factor, i in zip(D1_poly_3_str, range(len(D1_poly_3_str), -1, -1))])
+    # wielomian stopnia 4
+    D1_poly_4 = np.polyfit(bin_center, calculate_D(m1, step, 1), 4)
+    D1_poly_4_str = ['{:.1f}'.format(x) for x in D1_poly_4]
+    D1_4_legend = '+'.join([f'{factor}x^{i-1}' for factor, i in zip(D1_poly_4_str, range(len(D1_poly_4_str), -1, -1))])
+
+    # Dopasowanie wielomianami do D2
+    # wielomian stopnia 2
+    D2_poly_2 = np.polyfit(bin_center, calculate_D2(m2, step, 1), 2)
+    D2_poly_2_str = ['{:.1f}'.format(x) for x in D2_poly_2]
+    D2_2_legend = '+'.join([f'{factor}x^{i-1}' for factor, i in zip(D2_poly_2_str, range(len(D2_poly_2_str), -1, -1))])
+
+    D2_poly_3 = np.polyfit(bin_center, calculate_D2(m2, step, 1), 3)
+    D2_poly_3_str = ['{:.1f}'.format(x) for x in D2_poly_3]
+    D2_3_legend = '+'.join([f'{factor}x^{i-1}' for factor, i in zip(D2_poly_3_str, range(len(D2_poly_3_str), -1, -1))])
+    
         
     x = np.linspace(-3, 3)
  
     fig, (ax1, ax2) = plt.subplots(nrows=2, ncols=1, figsize=(12, 8))
     ax1.scatter(bin_center, calculate_D(m1, step, 1), color='red', label='D1')
+    ax1.plot(x, plot_poly(x, D1_poly_2, 2), label=D1_2_legend)
+    ax1.plot(x, plot_poly(x, D1_poly_3, 3), label=D1_3_legend)
+    ax1.plot(x, plot_poly(x, D1_poly_4, 4), label=D1_4_legend)
     ax1.plot(x, f1(x), label='x-x^3')
     ax2.scatter(bin_center, calculate_D2(m2, step, 2), color='red', label='D2')
+    ax2.plot(x, plot_poly(x, D2_poly_2, 2), label=D2_2_legend)
+    ax2.plot(x, plot_poly(x, D2_poly_3, 3), label=D2_3_legend)
     ax2.plot(x, f2(x), label='x^2+1 ')
     ax1.legend()
     ax1.grid()
