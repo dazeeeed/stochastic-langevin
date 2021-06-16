@@ -39,8 +39,8 @@ if __name__ == "__main__":
     adjClose_ = data["Adj Close"].to_numpy()
     volume_ = data["Volume"].to_numpy()
 
-    ax1.plot(date_, open_, date_, high_, date_, low_)
-
+    # ax1.plot(date_, open_, date_, high_, date_, low_)
+    ax1.plot(high_)
     dt = 1
 
     m_1, maxsize = calculate_average(open_, dt=dt, n=1)
