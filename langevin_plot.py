@@ -24,8 +24,8 @@ D2_label = 'x^2+1'
 def D2(X):
     return X**2 + 1
     # return X - X + 1
- 
-def langevin(D1, D2, step=0.001, rng=6000):
+    
+def langevin(D1, D2, step=0.001, rng=6000, random_array = []):
     """
     Generation of points given the functions D1(x), D2(x) using stochastic Euler integration.
     Parameters
@@ -38,10 +38,12 @@ def langevin(D1, D2, step=0.001, rng=6000):
     ----------
     X - one yielded point from integration (one by one)
     """
-    X = 0.00798
+    X = 0.01
     yield X
     for i in range(rng):
-        X = X + D1(X) * step + np.sqrt(D2(X) * step) * np.random.normal(0, 1)
+        xrand = np.random.normal(0, 1)
+        random_array.append(xrand)
+        X = X + D1(X) * step + np.sqrt(D2(X) * step) * xrand
         yield X
 
 def i_before_k(i, k, lst):
@@ -196,8 +198,10 @@ def plot_bins_real():
 
     # Data columns: ['Date', 'Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume']
     data = readFile("SP500.csv")
-    kupa = data["High"].to_numpy()[8009:13277]
-    lst = [np.log(kupa[i+1] / kupa[i]) for i in range(len(kupa) - 1)]
+    # yrs60_81 = data["High"].to_numpy()[8009:13277]
+    # lst = [np.log(yrs60_81[i+1] / yrs60_81[i]) for i in range(len(yrs60_81) - 1)]
+    # print(lst)
+    lst = readFile("SP500_High_Ln.csv")["ln(x2/x1)"].to_numpy()
 
     # implementacja binów
     xmin = min(lst)
@@ -314,24 +318,46 @@ def plot_bins_real():
     # print("D2_poly_3")
     # print(D2_poly_3)
 
-<<<<<<< HEAD
-def generate_langevin(D1, D2, step=0.001, rng=6000, random_array = []):
-    X = 0.1
-    for i in range(rng):
-        xrand = np.random.normal(0, 1)
-        random_array.append(xrand)
-        X = X + D1(X) * step + np.sqrt(D2(X) * step) * xrand
-        yield X
+def D1_reconstruct(x):
+    #return -7.71992520e+01 * x + 2.45485375e-03
+    return -79.70198522 * x - 8.94227661
+
+def D2_reconstruct(x):
+    #return 5.23826616e+01 * x**2 - 3.30002109e-02 * x + 2.11100113e-03
+    return 64.71447797*x*x + 11.06810673*x +  3.00977943
+
+def reconstruct():
+    tau = 0.01
+    lst = list(langevin(D1_reconstruct, D2_reconstruct, step=tau, rng=5000))
+    plt.plot(range(len(lst)), lst)
+    high_trend = readFile("SP500_High_trend.csv")["High_trend"].to_numpy()
+
+    # lst = [np.exp(i) * 59.344815 for i in lst]
+    highminustrend = []
+    highminustrend.append(5.57)
+    print(highminustrend)
+    for i in range(len(lst)-1):
+        val = np.exp(lst[i]) * highminustrend[i]
+        # if i < 100:
+            # print("lst: {}, h-t: {}".format(lst[i], highminustrend[i-1]))
+            # print(val)
+        highminustrend.append( np.exp(lst[i]) * highminustrend[i] )
+        # print(lst[i])
+    
+    reconstructed = highminustrend #+ high_trend[:5001]
+    plt.plot(range(len(reconstructed)), reconstructed)
+    plt.show()
 
 
 if __name__ == '__main__':
     #plot_bins_synthetic()
     #plot_bins_real()
+    reconstruct()
 
     # step = 0.001
     # rng = 1000000
     # random_arr = []
-    # lst = list(generate_langevin(D1, D2, step, rng, random_arr))
+    # lst = list(langevin(D1, D2, step, rng, random_arr))
     
     # # Generation from known D1, D2 
     # fig, ax = plt.subplots()
@@ -361,23 +387,3 @@ if __name__ == '__main__':
     
     # plt.tight_layout()
     # plt.show()
-=======
-def D1_reconstruct(x):
-    return -7.71992520e+01 * x + 2.45485375e-03
-
-def D2_reconstruct(x):
-    return 5.23826616e+01 * x**2 - 3.30002109e-02 * x + 2.11100113e-03
-
-def reconstruct():
-    lst = list(langevin(D1_reconstruct, D2_reconstruct, 0.0001, 5000))
-
-    lst = [np.exp(i) * 59.344815 for i in lst]
-
-    plt.plot(range(len(lst)), lst)
-    plt.show()
-
-if __name__ == '__main__':
-    #plot_bins_synthetic()
-    # plot_bins_real()
-    reconstruct()
->>>>>>> d6b35f3289df4775ab5781e78ce9646aa3907e40
