@@ -332,6 +332,49 @@ def plot_bins_real():
     # print("D2_poly_3")
     # print(D2_poly_3)
 
+def generate_langevin(D1, D2, step=0.001, rng=6000, random_array = []):
+    X = 0.1
+    for i in range(rng):
+        xrand = np.random.normal(0, 1)
+        random_array.append(xrand)
+        X = X + D1(X) * step + np.sqrt(D2(X) * step) * xrand
+        yield X
+
+
 if __name__ == '__main__':
     #plot_bins_synthetic()
-    plot_bins_real()
+    #plot_bins_real()
+
+    # step = 0.001
+    # rng = 1000000
+    # random_arr = []
+    # lst = list(generate_langevin(D1, D2, step, rng, random_arr))
+    
+    # # Generation from known D1, D2 
+    # fig, ax = plt.subplots()
+    # plt.xlabel('t')
+    # plt.ylabel('x')
+    # ax.plot(np.arange(0, 100000*step, step), lst[:100000])
+    # plt.ylim([-3, 3])
+    # plt.grid(True)
+    # plt.show()
+
+    # # Histogram of random variables
+    # fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, sharey=True, sharex=True)
+    # ax1.hist(random_arr[:10000], bins=200, density=True, histtype='step')
+    # ax2.hist(random_arr[:100000], bins=200, density=True, histtype='step')
+    # ax3.hist(random_arr[:1000000], bins=200, density=True, histtype='step')
+    # ax1.set_ylabel('Probability')
+    # ax1.set_xlabel('x')
+    # ax1.grid(True)
+    # ax1.set_title("N=10000")
+    # ax2.set_xlabel('x')
+    # ax2.grid(True)
+    # ax2.set_title("N=100000")
+    # ax3.set_xlabel('x')
+    # ax3.grid(True)
+    # ax3.set_title("N=100000")
+    # plt.xlim([-4, 4])
+    
+    # plt.tight_layout()
+    # plt.show()
