@@ -24,27 +24,6 @@ D2_label = 'x^2+1'
 def D2(X):
     return X**2 + 1
     # return X - X + 1
-
-# NIEPOTRZEBNE
-# def f1(lst):
-#     y = [x-x**3 for x in lst]
-#     return y
-
-# def f2(lst):
-#     return [x**2+1 for x in lst]
-#     return y
-
-# NIEPOTRZEBNE, mozna uzyc np.polyval
-# def plot_poly(lst, poly, order):
-#     poly_len = len(poly)
-#     ret_poly = []
-#     for i in lst:
-#         value = 0
-#         for j in range(poly_len):
-#             value += i**j*poly[poly_len - j - 1]
-#         ret_poly.append(value)
-
-#     return ret_poly
  
 def langevin(D1, D2, step=0.001, rng=6000):
     """
@@ -59,12 +38,10 @@ def langevin(D1, D2, step=0.001, rng=6000):
     ----------
     X - one yielded point from integration (one by one)
     """
-    X = 0.1
+    X = 0.00798
+    yield X
     for i in range(rng):
         X = X + D1(X) * step + np.sqrt(D2(X) * step) * np.random.normal(0, 1)
-        # print(X)
-        # if(isnan(X)):
-        #     time.sleep(10)
         yield X
 
 def i_before_k(i, k, lst):
@@ -219,8 +196,8 @@ def plot_bins_real():
 
     # Data columns: ['Date', 'Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume']
     data = readFile("SP500.csv")
-    lst = data["High"].to_numpy()[20000:]
-    
+    kupa = data["High"].to_numpy()[8009:13277]
+    lst = [np.log(kupa[i+1] / kupa[i]) for i in range(len(kupa) - 1)]
 
     # implementacja binów
     xmin = min(lst)
@@ -254,7 +231,7 @@ def plot_bins_real():
 
     # usuwa biny z za małą liczbą zliczeń
     for key in counts:
-        if counts[key] < 10:
+        if counts[key] < 100:
             bin_center.remove(key)
 
     # lista m z algorytmu dla odpowienich srodkow binu
@@ -277,17 +254,21 @@ def plot_bins_real():
         m2.append(value2)
 
     #Dopasowanie do danych D1
+    # wielomian stopnia 1
+    D1_poly_1 = np.polyfit(bin_center, calculate_D(m1, step, 1), 1)
+    D1_poly_1_str = ['{:.1f}'.format(x) for x in D1_poly_1]
+    D1_1_legend = '+'.join([f'{factor}x^{i-1}' for factor, i in zip(D1_poly_1_str, range(len(D1_poly_1_str), -1, -1))])
     # wielomian stopnia 2
-    D1_poly_2 = np.polyfit(bin_center, calculate_D(m1, step, 1), 5)
+    D1_poly_2 = np.polyfit(bin_center, calculate_D(m1, step, 1), 2)
     D1_poly_2_str = ['{:.1f}'.format(x) for x in D1_poly_2]
     D1_2_legend = '+'.join([f'{factor}x^{i-1}' for factor, i in zip(D1_poly_2_str, range(len(D1_poly_2_str), -1, -1))])
     
-    # wielomian stopnia 3
+    # # wielomian stopnia 3
     # D1_poly_3 = np.polyfit(bin_center, calculate_D(m1, step, 1), 3)
     # D1_poly_3_str = ['{:.1f}'.format(x) for x in D1_poly_3]
     # D1_3_legend = '+'.join([f'{factor}x^{i-1}' for factor, i in zip(D1_poly_3_str, range(len(D1_poly_3_str), -1, -1))])
     
-    # wielomian stopnia 4
+    # # # wielomian stopnia 4
     # D1_poly_4 = np.polyfit(bin_center, calculate_D(m1, step, 1), 4)
     # D1_poly_4_str = ['{:.1f}'.format(x) for x in D1_poly_4]
     # D1_4_legend = '+'.join([f'{factor}x^{i-1}' for factor, i in zip(D1_poly_4_str, range(len(D1_poly_4_str), -1, -1))])
@@ -303,26 +284,27 @@ def plot_bins_real():
     # D2_3_legend = '+'.join([f'{factor}x^{i-1}' for factor, i in zip(D2_poly_3_str, range(len(D2_poly_3_str), -1, -1))])
             
     # x = np.linspace(-3, 3)
-    x = np.arange(min(bin_center), max(bin_center)+1000, 0.01)
+    x = np.arange(min(bin_center), max(bin_center), 0.00001)
  
     fig, (ax1, ax2) = plt.subplots(nrows=2, ncols=1, figsize=(12, 8))
+    fig.suptitle('01.01.1960 - 15.05.1981', fontsize=15)
     ax1.scatter(bin_center, calculate_D(m1, step, 1), color='red', label='D1')
-    ax1.plot(x, np.polyval(D1_poly_2, x), label=D1_2_legend)
+    ax1.plot(x, np.polyval(D1_poly_1, x), label=D1_1_legend)
+    # ax1.plot(x, np.polyval(D1_poly_2, x), label=D1_2_legend)
     # ax1.plot(x, np.polyval(D1_poly_3, x), label=D1_3_legend)
     # ax1.plot(x, np.polyval(D1_poly_4, x), label=D1_4_legend)
-    # ax1.plot(x, D1(x), label=D1_label)
+
     ax2.scatter(bin_center, calculate_D2(m2, step, 2), color='red', label='D2')
-    # ax2.plot(x, np.polyval(D2_poly_2, x), label=D2_2_legend)
+    ax2.plot(x, np.polyval(D2_poly_2, x), label=D2_2_legend)
     # ax2.plot(x, np.polyval(D2_poly_3, x), label=D2_3_legend)
-    # ax2.plot(x, D2(x), label=D2_label)
     ax1.legend()
     ax1.grid()
     ax2.legend()
     ax2.grid()
     plt.show()
 
-    print("D1_poly_2")
-    print(D1_poly_2)
+    print("D1_poly_1")
+    print(D1_poly_1)
     # print("D1_poly_3")
     # print(D1_poly_3)
     # print("D1_poly_4")
@@ -332,6 +314,21 @@ def plot_bins_real():
     # print("D2_poly_3")
     # print(D2_poly_3)
 
+def D1_reconstruct(x):
+    return -7.71992520e+01 * x + 2.45485375e-03
+
+def D2_reconstruct(x):
+    return 5.23826616e+01 * x**2 - 3.30002109e-02 * x + 2.11100113e-03
+
+def reconstruct():
+    lst = list(langevin(D1_reconstruct, D2_reconstruct, 0.0001, 5000))
+
+    lst = [np.exp(i) * 59.344815 for i in lst]
+
+    plt.plot(range(len(lst)), lst)
+    plt.show()
+
 if __name__ == '__main__':
     #plot_bins_synthetic()
-    plot_bins_real()
+    # plot_bins_real()
+    reconstruct()
